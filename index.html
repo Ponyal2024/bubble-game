@@ -15,13 +15,15 @@
         <div id="startScreen" class="screen">
             <h1>Bubble Buddies</h1>
             <p>Помоги осьминогу Олли скушать самых больших рыбок!</p>
-            <p>Соединяй одинаковые пузыри, чтобы они превращались в более вкусных обитателей!</p>
-            <button id="startButton">Играть!</button>
+            <p>Соединяй одинаковые пузыри!</p>
+            <button id="startButton" class="tg-button">🎮 Играть!</button>
+            <!-- Добавим тестовую кнопку -->
+            <button id="testButton" style="margin-top: 10px; background: #ff9800;" onclick="alert('Кнопка работает!')">Тест: нажми меня</button>
         </div>
         <div id="gameOverScreen" class="screen hidden">
             <h1>Игра Окончена!</h1>
             <p>Ваш счет: <span id="finalScore">0</span></p>
-            <button id="restartButton">Играть снова</button>
+            <button id="restartButton" class="tg-button">Играть снова</button>
         </div>
     </div>
     <script src="script.js"></script>
