@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Buddies</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="score">Очки: 0</div>
+        <div id="highScore">Рекорд: 0</div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="startScreen" class="screen">
+            <h1>Bubble Buddies</h1>
+            <p>Помоги осьминогу Олли скушать самых больших рыбок!</p>
+            <p>Соединяй одинаковые пузыри, чтобы они превращались в более вкусных обитателей!</p>
+            <button id="startButton">Играть!</button>
+        </div>
+        <div id="gameOverScreen" class="screen hidden">
+            <h1>Игра Окончена!</h1>
+            <p>Ваш счет: <span id="finalScore">0</span></p>
+            <button id="restartButton">Играть снова</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
