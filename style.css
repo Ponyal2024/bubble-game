@@ -82,4 +82,47 @@ p {
     font-size: 1.2em;
     max-width: 80%;
     line-height: 1.5;
+
+}
+.tg-button {
+    background: #2481cc !important;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 18px;
+    margin: 20px 2px;
+    cursor: pointer;
+    border-radius: 12px;
+    font-family: inherit;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+    min-width: 150px;
+}
+
+.tg-button:hover {
+    background: #1c6aa8 !important;
+    transform: scale(1.05);
+}
+
+/* Специальные стили для Telegram */
+.tg-button:active {
+    transform: scale(0.95);
+}
+
+/* Убедимся что кнопки кликабельны */
+button {
+    pointer-events: auto !important;
+    z-index: 1000;
+}
+
+/* Для мобильных устройств */
+@media (max-width: 768px) {
+    .tg-button {
+        padding: 20px 40px;
+        font-size: 20px;
+        min-width: 200px;
+    }
 }
