@@ -1,43 +1,81 @@
-vafoe𓁺, [27.11.2025 9:55]
-// Инициализация Telegram Web App
-const tg = window.Telegram.WebApp;
-tg.expand();
-tg.enableClosingConfirmation(); // Спросить при закрытии
-tg.BackButton.hide(); // Скрыть кнопку "Назад" на старте
+// =============================================
+// Bubble Buddies - Telegram Mini App Game
+// =============================================
 
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const startScreen = document.getElementById('startScreen');
-const gameOverScreen = document.getElementById('gameOverScreen');
-const startButton = document.getElementById('startButton');
-const restartButton = document.getElementById('restartButton');
-const scoreElement = document.getElementById('score');
-const highScoreElement = document.getElementById('highScore');
-const finalScoreElement = document.getElementById('finalScore');
+console.log('🚀 Игра загружается...');
+
+// Безопасная инициализация Telegram Web App
+let tg;
+try {
+    tg = window.Telegram?.WebApp;
+    if (tg) {
+        console.log('✅ Telegram Web App обнаружен');
+        tg.expand();
+        tg.enableClosingConfirmation?.();
+        tg.BackButton?.hide();
+    } else {
+        console.log('🌐 Работаем в браузере');
+    }
+} catch (error) {
+    console.log('⚠️ Ошибка инициализации Telegram:', error);
+}
+
+// Получаем элементы DOM
+const elements = {
+    canvas: document.getElementById('gameCanvas'),
+    startScreen: document.getElementById('startScreen'),
+    gameOverScreen: document.getElementById('gameOverScreen'),
+    startButton: document.getElementById('startButton'),
+    restartButton: document.getElementById('restartButton'),
+    scoreElement: document.getElementById('score'),
+    highScoreElement: document.getElementById('highScore'),
+    finalScoreElement: document.getElementById('finalScore')
+};
+
+// Проверяем что все элементы найдены
+console.log('Поиск элементов:', {
+    canvas: !!elements.canvas,
+    startButton: !!elements.startButton,
+    restartButton: !!elements.restartButton
+});
+
+const ctx = elements.canvas?.getContext('2d');
 
 // Настройки игры
-canvas.width = window.innerWidth * 0.95;
-canvas.height = window.innerHeight * 0.75;
+function setupCanvas() {
+    if (!elements.canvas) return;
+    
+    const width = Math.min(window.innerWidth * 0.95, 400);
+    const height = Math.min(window.innerHeight * 0.75, 600);
+    
+    elements.canvas.width = width;
+    elements.canvas.height = height;
+    
+    console.log(🎯 Canvas настроен: ${width}x${height});
+}
 
-let score = 0;
-let highScore = localStorage.getItem('bubbleBuddiesHighScore') || 0;
-highScoreElement.textContent = Рекорд: ${highScore};
+// Игровые переменные
+let gameState = {
+    score: 0,
+    highScore: localStorage.getItem('bubbleBuddiesHighScore') || 0,
+    gameRunning: false,
+    animationId: null
+};
 
-let gameRunning = false;
-let animationId;
-
-// Классы игры
+// Класс игрока
 class Player {
     constructor() {
         this.width = 80;
         this.height = 60;
-        this.x = canvas.width / 2 - this.width / 2;
-        this.y = canvas.height - this.height - 10;
+        this.x = elements.canvas ? elements.canvas.width / 2 - this.width / 2 : 0;
+        this.y = elements.canvas ? elements.canvas.height - this.height - 10 : 0;
         this.speed = 8;
         this.color = '#FF6B8B';
     }
 
     draw() {
+        if (!ctx || !gameState.gameRunning) return;
+
         // Тело осьминога
         ctx.fillStyle = this.color;
         ctx.beginPath();
@@ -63,49 +101,38 @@ class Player {
         ctx.beginPath();
         ctx.arc(this.x + this.width / 2, this.y + this.height / 2 + 10, 10, 0.2 * Math.PI, 0.8 * Math.PI);
         ctx.stroke();
-
-        // Щупальца (упрощенно)
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        for (let i = 0; i < 5; i++) {
-            ctx.beginPath();
-            ctx.moveTo(this.x + (this.width / 4) * i, this.y + this.height);
-            ctx.lineTo(this.x + (this.width / 4) * i - 10, this.y + this.height + 15);
-            ctx.stroke();
-        }
     }
 
     move(direction) {
+        if (!elements.canvas) return;
+        
         if (direction === 'left' && this.x > 0) {
             this.x -= this.speed;
         }
-        if (direction === 'right' && this.x < canvas.width - this.width) {
+        if (direction === 'right' && this.x < elements.canvas.width - this.width) {
             this.x += this.speed;
         }
     }
 }
 
+// Класс пузыря
 class Bubble {
     constructor(level = 1) {
         this.level = level;
-        this.radius = this.getRadiusByLevel();
+        this.radius = 20 + (level - 1) * 5;
         this.colors = ['#FF5252', '#FFEB3B', '#4CAF50', '#2196F3', '#9C27B0'];
-        this.color = this.colors[this.level - 1] || '#FFFFFF';
-        this.creatures = ['🐠', '🦐', '🐡', '🐙', '🐬'];
-        this.creature = this.creatures[this.level - 1] || '🌟';
-        this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
-        this.y = -this.radius;
-        this.speed = 1 + Math.random() * 1.5 + (this.level * 0.2);
-        this.isMerging = false;
-    }
+        this.color = this.colors[level - 1] || '#FFFFFF';
 
-    getRadiusByLevel() {
-        const baseRadius = 20;
-        return baseRadius + (this.level - 1) * 5;
+this.creatures = ['🐠', '🦐', '🐡', '🐙', '🐬'];
+        this.creature = this.creatures[level - 1] || '🌟';
+        this.x = elements.canvas ? Math.random() * (elements.canvas.width - this.radius * 2) + this.radius : 0;
+        this.y = -this.radius;
+        this.speed = 1 + Math.random() * 1.5 + (level * 0.2);
     }
 
     draw() {
+        if (!ctx) return;
+
         // Пузырь
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -114,13 +141,6 @@ class Bubble {
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
         ctx.stroke();
-
-vafoe𓁺, [27.11.2025 9:55]
-// Блик на пузыре
-        ctx.beginPath();
-        ctx.arc(this.x - this.radius / 3, this.y - this.radius / 3, this.radius / 4, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.fill();
 
         // Существо внутри пузыря
         ctx.font = ${this.radius}px Arial;
@@ -133,80 +153,118 @@ vafoe𓁺, [27.11.2025 9:55]
     update() {
         this.y += this.speed;
     }
-
-    isCollidingWith(otherBubble) {
-        const dx = this.x - otherBubble.x;
-        const dy = this.y - otherBubble.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        return distance < this.radius + otherBubble.radius;
-    }
 }
 
-// Игровые переменные
+// Игровые объекты
 let player = new Player();
 let bubbles = [];
 let keys = {};
-let lastSpawnTime = 0;
-const spawnInterval = 1000; // 1 секунда
 
-// Обработчики событий
-window.addEventListener('keydown', (e) => {
-    keys[e.key] = true;
-});
+// ОБРАБОТЧИКИ СОБЫТИЙ - ИСПРАВЛЕННЫЕ
+function initEventListeners() {
+    console.log('🎮 Инициализация обработчиков...');
+    
+    // Обработчики кнопок
+    if (elements.startButton) {
+        elements.startButton.onclick = startGame;
+        console.log('✅ Кнопка "Играть" настроена');
+    } else {
+        console.log('❌ Кнопка "Играть" не найдена');
+    }
+    
+    if (elements.restartButton) {
+        elements.restartButton.onclick = startGame;
+        console.log('✅ Кнопка "Рестарт" настроена');
+    }
 
-window.addEventListener('keyup', (e) => {
-    keys[e.key] = false;
-});
+    // Клавиатура
+    window.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+    });
 
-canvas.addEventListener('touchstart', handleTouch);
-canvas.addEventListener('touchmove', handleTouch);
+    window.addEventListener('keyup', (e) => {
+        keys[e.key] = false;
+    });
+
+    // Тач события
+    if (elements.canvas) {
+        elements.canvas.addEventListener('touchstart', handleTouch);
+        elements.canvas.addEventListener('touchmove', handleTouch);
+    }
+}
 
 function handleTouch(e) {
     e.preventDefault();
+    if (!elements.canvas) return;
+    
     const touch = e.touches[0];
-    const touchX = touch.clientX - canvas.getBoundingClientRect().left;
+    const touchX = touch.clientX - elements.canvas.getBoundingClientRect().left;
     player.x = touchX - player.width / 2;
-    // Ограничиваем движение игрока в пределах canvas
+    
+    // Ограничения
     if (player.x < 0) player.x = 0;
-    if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+    if (player.x > elements.canvas.width - player.width) {
+        player.x = elements.canvas.width - player.width;
+    }
 }
 
-startButton.addEventListener('click', startGame);
-restartButton.addEventListener('click', startGame);
-
+// ОСНОВНЫЕ ФУНКЦИИ ИГРЫ
 function startGame() {
-    gameRunning = true;
-    score = 0;
-    scoreElement.textContent = Очки: ${score};
+    console.log('🎲 Запуск игры!');
+    
+    gameState.gameRunning = true;
+    gameState.score = 0;
+    
+    if (elements.scoreElement) {
+        elements.scoreElement.textContent = Очки: ${gameState.score};
+    }
+    
     bubbles = [];
     player = new Player();
-    startScreen.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
+    
+    // Прячем экраны
+    if (elements.startScreen) elements.startScreen.classList.add('hidden');
+    if (elements.gameOverScreen) elements.gameOverScreen.classList.add('hidden');
+    
+    // Запускаем игровой цикл
     gameLoop();
 }
 
 function gameOver() {
-    gameRunning = false;
-    cancelAnimationFrame(animationId);
-    finalScoreElement.textContent = score;
-    if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('bubbleBuddiesHighScore', highScore);
-        highScoreElement.textContent = Рекорд: ${highScore};
+    console.log('💀 Конец игры');
+    
+    gameState.gameRunning = false;
+    if (gameState.animationId) {
+        cancelAnimationFrame(gameState.animationId);
     }
-    gameOverScreen.classList.remove('hidden');
-    tg.HapticFeedback.impactOccurred('heavy');
+    
+    // Обновляем рекорд
+    if (gameState.score > gameState.highScore) {
+        gameState.highScore = gameState.score;
+        localStorage.setItem('bubbleBuddiesHighScore', gameState.highScore);
+        if (elements.highScoreElement) {
+            elements.highScoreElement.textContent = Рекорд: ${gameState.highScore};
+        }
+    }
+    
+    // Показываем экран окончания
+    if (elements.gameOverScreen) {
+        elements.gameOverScreen.classList.remove('hidden');
+    }
+    if (elements.finalScoreElement) {
+        elements.finalScoreElement.textContent = gameState.score;
+    }
 }
 
 function spawnBubble() {
-    const currentTime = Date.now();
-    if (currentTime - lastSpawnTime > spawnInterval) {
-        bubbles.push(new Bubble());
-        lastSpawnTime = currentTime;
-    }
+    if (!gameState.gameRunning) return;
+    
+    bubbles.push(new Bubble());
 }
 
 function update() {
+    if (!gameState.gameRunning) return;
+
     // Движение игрока
     if (keys['ArrowLeft'] || keys['a']) {
         player.move('left');
@@ -215,21 +273,14 @@ function update() {
         player.move('right');
     }
 
-    // Спавн пузырей
-    spawnBubble();
+    // Спавн пузырей (простой вариант)
+    if (Math.random() < 0.02) {
+        spawnBubble();
+    }
 
-    // Обновление и проверка пузырей
+// Обновление пузырей
     for (let i = bubbles.length - 1; i >= 0; i--) {
         bubbles[i].update();
-
-        // Проверка на выход за нижнюю границу (игрок поймал пузырь)
-        if (bubbles[i].y - bubbles[i].radius > canvas.height) {
-            score += bubbles[i].level * 10;
-            scoreElement.textContent = Очки: ${score};
-            tg.HapticFeedback.impactOccurred('light');
-            bubbles.splice(i, 1);
-            continue;
-        }
 
         // Проверка на столкновение с игроком
         if (
@@ -238,76 +289,64 @@ function update() {
             bubbles[i].y + bubbles[i].radius > player.y &&
             bubbles[i].y - bubbles[i].radius < player.y + player.height
         ) {
-            score += bubbles[i].level * 10;
-            scoreElement.textContent = Очки: ${score};
-            tg.HapticFeedback.impactOccurred('light');
+            gameState.score += bubbles[i].level * 10;
+            if (elements.scoreElement) {
+                elements.scoreElement.textContent = Очки: ${gameState.score};
+            }
             bubbles.splice(i, 1);
             continue;
         }
 
-        // Проверка на столкновение пузырей друг с другом
-
-vafoe𓁺, [27.11.2025 9:55]
-for (let j = i + 1; j < bubbles.length; j++) {
-            if (bubbles[i].isCollidingWith(bubbles[j]) && bubbles[i].level === bubbles[j].level && !bubbles[i].isMerging && !bubbles[j].isMerging) {
-                const newLevel = bubbles[i].level + 1;
-                const newX = (bubbles[i].x + bubbles[j].x) / 2;
-                const newY = (bubbles[i].y + bubbles[j].y) / 2;
-
-                // Помечаем пузыри для удаления и создаем новый
-                bubbles[i].isMerging = true;
-                bubbles[j].isMerging = true;
-
-                setTimeout(() => {
-                    bubbles.push(new Bubble(newLevel));
-                    bubbles[ bubbles.length - 1 ].x = newX;
-                    bubbles[ bubbles.length - 1 ].y = newY;
-                    tg.HapticFeedback.impactOccurred('medium');
-                }, 50);
-
-                // Удаляем старые пузыри
-                setTimeout(() => {
-                    const indexI = bubbles.findIndex(b => b === bubbles[i]);
-                    const indexJ = bubbles.findIndex(b => b === bubbles[j]);
-                    if (indexI > -1) bubbles.splice(indexI, 1);
-                    if (indexJ > -1) bubbles.splice(indexJ > indexI ? indexJ - 1 : indexJ, 1);
-                }, 100);
-
-                break;
-            }
-        }
-
-        // Проверка на проигрыш (пузырь достиг верха)
-        if (bubbles[i].y - bubbles[i].radius < 0) {
-            gameOver();
-            return;
+        // Проверка на выход за границы
+        if (bubbles[i].y - bubbles[i].radius > elements.canvas.height) {
+            bubbles.splice(i, 1);
+            continue;
         }
     }
 }
 
 function draw() {
-    // Очистка canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!ctx  !elements.canvas  !gameState.gameRunning) return;
 
-    // Рисуем фон (дно океана)
+    // Очистка
+    ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
+
+    // Фон
     ctx.fillStyle = 'rgba(0, 20, 40, 0.3)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
 
-    // Рисуем пузыри
+    // Пузыри
     bubbles.forEach(bubble => bubble.draw());
 
-    // Рисуем игрока
+    // Игрок
     player.draw();
 }
 
 function gameLoop() {
-    if (!gameRunning) return;
+    if (!gameState.gameRunning) return;
+    
     update();
     draw();
-    animationId = requestAnimationFrame(gameLoop);
+    gameState.animationId = requestAnimationFrame(gameLoop);
 }
 
-// Инициализация при загрузке
-window.onload = () => {
-    highScoreElement.textContent = Рекорд: ${highScore};
-};
+// ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+window.addEventListener('load', function() {
+    console.log('📦 Страница полностью загружена');
+    
+    // Настраиваем canvas
+    setupCanvas();
+    
+    // Инициализируем обработчики
+    initEventListeners();
+    
+    // Показываем рекорд
+    if (elements.highScoreElement) {
+        elements.highScoreElement.textContent = Рекорд: ${gameState.highScore};
+    }
+    
+    console.log('✅ Игра готова к запуску!');
+});
+
+// Обработчик изменения размера
+window.addEventListener('resize', setupCanvas);
